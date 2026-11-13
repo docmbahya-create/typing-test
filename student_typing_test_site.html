@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173b67">
+<title>Student Typing Test | Teacher Dashboard</title>
+<style>
+:root{--navy:#173b67;--blue:#2563eb;--bg:#f3f6fb;--ink:#172033;--muted:#64748b;--line:#dbe3ef;--green:#16845b;--red:#c24141}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:linear-gradient(120deg,#173b67,#2563eb);color:white;padding:22px max(18px,calc((100% - 1120px)/2))}
+header h1{margin:0;font-size:clamp(22px,4vw,30px)}header p{margin:5px 0 0;color:#e5edff}
+main{max-width:1120px;margin:22px auto;padding:0 16px 50px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button,.tab{border:0;border-radius:9px;padding:10px 15px;font:inherit;font-weight:650;cursor:pointer}
+.tab{background:white;color:var(--navy);border:1px solid var(--line)}.tab.active,.primary{background:var(--blue);color:white}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:white;border:1px solid var(--line);color:var(--ink)}.danger{background:#fff1f1;color:var(--red);border:1px solid #ffd3d3}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #142b4b08}
+h2{font-size:20px;margin:0 0 12px}h3{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:650;color:#334155}input,select,textarea{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:var(--ink);font:inherit;margin-top:5px}
+textarea{min-height:145px;resize:vertical;line-height:1.8}.timer{font-size:48px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;color:var(--navy)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f6f8fc;border:1px solid var(--line);padding:13px;border-radius:10px;text-align:center}.stat strong{display:block;font-size:25px}.stat span{font-size:12px;color:var(--muted)}
+.passage{background:#f6f8fc;padding:14px;border-radius:9px;line-height:1.9}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}th{color:#475569;background:#f8fafc}
+.table-wrap{overflow-x:auto}.badge{display:inline-block;padding:3px 8px;border-radius:20px;background:#eaf1ff;color:#1d4ed8;font-size:12px;font-weight:700}
+.hidden{display:none!important}.notice{padding:11px 13px;border-radius:9px;background:#eff6ff;color:#1e40af;font-size:13px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.timer{font-size:40px}main{margin-top:14px}.panel{padding:14px}th,td{white-space:nowrap}}
+@media print{header,.tabs,.no-print{display:none!important}body{background:white}main{max-width:none;margin:0}.panel{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><h1>⌨️ Student Typing Test</h1><p>Timed keyboarding practice, automatic scoring and class performance tracking</p></header>
+<main>
+<nav class="tabs no-print" aria-label="Main navigation">
+<button class="tab active" data-tab="test">Student test</button>
+<button class="tab" data-tab="dashboard">Teacher dashboard</button>
+</nav>
+
+<section id="test">
+<div class="panel">
+<h2>Student details</h2>
+<div class="grid">
+<label>Student full name<input id="studentName" placeholder="Enter full name" autocomplete="name"></label>
+<label>Class / grade<input id="studentClass" placeholder="e.g. Form 2"></label>
+<label>Test duration<select id="duration"><option value="1">1 minute</option><option value="2" selected>2 minutes</option><option value="3">3 minutes</option><option value="5">5 minutes</option><option value="10">10 minutes</option></select></label>
+<label>Difficulty<select id="difficulty"><option value="Basic">Basic – Easy</option><option value="Intermediate" selected>Intermediate – Standard</option><option value="Advanced">Advanced – Challenging</option></select></label>
+</div>
+</div>
+<div class="panel">
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Test timer</h2><span class="badge" id="testStatus">Ready</span></div>
+<div class="timer" id="timer">02:00</div>
+<div class="actions no-print" style="justify-content:center">
+<button class="primary" id="startBtn">Start test</button><button class="secondary" id="finishBtn" disabled>Finish test</button><button class="secondary" id="resetBtn">Reset</button>
+</div>
+</div>
+<div class="panel">
+<h2>Typing passage</h2>
+<p class="muted">Type the passage exactly as shown. The timer begins when you select Start test.</p>
+<div class="passage" id="passage"></div>
+<label style="margin-top:14px">Your typing<textarea id="typingInput" placeholder="Your typing area will unlock when the test starts..." disabled spellcheck="false" autocorrect="off" autocomplete="off"></textarea></label>
+<div class="muted" style="font-size:13px;margin-top:6px" id="charCount">0 characters typed</div>
+</div>
+<div class="panel hidden" id="resultPanel">
+<h2>Test result</h2><div class="stats">
+<div class="stat"><strong id="resultWpm">0</strong><span>Words per minute</span></div>
+<div class="stat"><strong id="resultAccuracy">0%</strong><span>Accuracy</span></div>
+<div class="stat"><strong id="resultErrors">0</strong><span>Errors / omissions</span></div>
+<div class="stat"><strong id="resultGrade">—</strong><span>Performance</span></div>
+</div>
+<p id="resultMessage" class="muted"></p>
+<div class="actions no-print"><button class="primary" id="newTestBtn">New student / test</button><button class="secondary" id="printResultBtn">Print result</button></div>
+</div>
+<div class="notice">Results are saved in this browser on this device. To combine results from different computers, export the records and import them into the teacher dashboard, or connect a shared online database.</div>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="panel">
+<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h2>Teacher dashboard</h2><p class="muted" style="margin:0">Review student attempts and compare class performance.</p></div><span class="badge" id="recordCount">0 records</span></div>
+<div class="stats" style="margin-top:15px">
+<div class="stat"><strong id="totalAttempts">0</strong><span>Total attempts</span></div>
+<div class="stat"><strong id="uniqueStudents">0</strong><span>Students</span></div>
+<div class="stat"><strong id="classAverage">0</strong><span>Average WPM</span></div>
+<div class="stat"><strong id="accuracyAverage">0%</strong><span>Average accuracy</span></div>
+</div>
+</div>
+<div class="panel">
+<h3>Filter results</h3><div class="grid">
+<label>Search student<input id="searchStudent" placeholder="Name or class"></label>
+<label>Filter class<select id="classFilter"><option value="">All classes</option></select></label>
+</div>
+<div class="actions no-print">
+<button class="primary" id="exportCsvBtn">Download Excel-compatible CSV</button>
+<label class="secondary" style="display:inline-flex;align-items:center;gap:7px;cursor:pointer">Import CSV<input id="importCsv" type="file" accept=".csv,text/csv" style="display:none"></label>
+<button class="secondary" id="printDashboardBtn">Print dashboard</button>
+<button class="danger" id="clearRecordsBtn">Delete all records</button>
+</div>
+<p class="muted" style="font-size:12px">Export a backup regularly. Import adds records to the current browser's records.</p>
+</div>
+<div class="panel">
+<h3>Class leaderboard</h3><div class="table-wrap"><table><thead><tr><th>Rank</th><th>Student</th><th>Class</th><th>Best WPM</th><th>Best accuracy</th><th>Attempts</th></tr></thead><tbody id="leaderboardBody"></tbody></table></div>
+</div>
+<div class="panel">
+<h3>Individual test records</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Level</th><th>Time</th><th>WPM</th><th>Accuracy</th><th>Grade</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+</div>
+</section>
+<footer>Student Typing Test • Teacher assessment tool</footer>
+</main>
+<script>
+(()=>{
+const passages={
+Basic:"A computer is an electronic device that receives information, processes data and produces useful results. Computers are used in schools, hospitals, offices and homes. Students can use computers to learn new skills, prepare assignments and communicate with other people. Learning how to type accurately is an important part of computer literacy.",
+Intermediate:"Information technology plays an important role in modern society. Computers help people communicate, conduct research, manage records and solve problems. In schools, digital learning provides students with opportunities to develop practical skills. A good computer user should understand basic computer operations, protect personal information and use technology responsibly. Regular typing practice improves speed, accuracy and confidence.",
+Advanced:"Digital transformation has changed the way organisations collect, process and communicate information. Effective computer literacy requires more than the ability to operate software; it also involves critical thinking, information security and responsible digital citizenship. Students who develop strong keyboarding skills can prepare documents efficiently, communicate professionally and participate confidently in an increasingly technology-driven environment."
+};
+const $=id=>document.getElementById(id),KEY='studentTypingTestRecordsV1';
+let active=false,finished=false,remaining=120,elapsed=0,interval=null,currentResult=null;
+let records=loadRecords();
+function loadRecords(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+function saveRecords(){localStorage.setItem(KEY,JSON.stringify(records))}
+function target(){return passages[$('difficulty').value]}
+function duration(){return Number($('duration').value)*60}
+function setTimer(){ $('timer').textContent=String(Math.floor(remaining/60)).padStart(2,'0')+':'+String(remaining%60).padStart(2,'0')}
+function stop(){if(interval){clearInterval(interval);interval=null}}
+function reset(){
+ stop();active=false;finished=false;remaining=duration();elapsed=0;currentResult=null;
+ $('typingInput').value='';$('typingInput').disabled=true;$('typingInput').placeholder='Your typing area will unlock when the test starts...';
+ $('startBtn').disabled=false;$('finishBtn').disabled=true;$('testStatus').textContent='Ready';$('charCount').textContent='0 characters typed';
+ $('passage').textContent=target();$('resultPanel').classList.add('hidden');setTimer();
+}
+function start(){
+ if(active||finished)return;
+ if(!$('studentName').value.trim()){alert('Please enter the student name first.');$('studentName').focus();return}
+ active=true;remaining=duration();elapsed=0;$('typingInput').disabled=false;$('typingInput').focus();
+ $('startBtn').disabled=true;$('finishBtn').disabled=false;$('testStatus').textContent='In progress';setTimer();
+ interval=setInterval(()=>{remaining--;elapsed++;setTimer();if(remaining<=0)finish()},1000);
+}
+function finish(){
+ if(!active)return;stop();active=false;finished=true;$('typingInput').disabled=true;$('finishBtn').disabled=true;$('testStatus').textContent='Completed';
+ const typed=$('typingInput').value,txt=target();let correct=0,wrong=0;
+ for(let i=0;i<typed.length;i++){if(i<txt.length&&typed[i]===txt[i])correct++;else wrong++}
+ const omissions=Math.max(0,txt.length-typed.length),accuracy=typed.length?Math.round(correct/typed.length*100):0;
+ const minutes=Math.max(elapsed/60,1/60),wpm=Math.round(correct/5/minutes);
+ const grade=wpm>=50?'Excellent':wpm>=40?'Very good':wpm>=30?'Good':wpm>=20?'Average':'Needs practice';
+ currentResult={id:Date.now()+'-'+Math.random().toString(16).slice(2),date:new Date().toISOString(),name:$('studentName').value.trim(),className:$('studentClass').value.trim()||'Not specified',level:$('difficulty').value,duration:Number($('duration').value),elapsed,wpm,accuracy,errors:wrong+omissions,grade,correct};
+ records.push(currentResult);saveRecords();
+ $('resultWpm').textContent=wpm;$('resultAccuracy').textContent=accuracy+'%';$('resultErrors').textContent=wrong+omissions;$('resultGrade').textContent=grade;
+ $('resultMessage').textContent=accuracy>=95?'Excellent accuracy. Keep practising to maintain this performance.':accuracy>=85?'Good effort. Focus on reducing errors while maintaining speed.':'Practise slowly and accurately before trying to increase speed.';
+ $('resultPanel').classList.remove('hidden');$('resultPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('startBtn').onclick=start;$('finishBtn').onclick=finish;$('resetBtn').onclick=reset;
+$('typingInput').addEventListener('input',()=>{$('charCount').textContent=$('typingInput').value.length+' characters typed'});
+$('duration').addEventListener('change',reset);$('difficulty').addEventListener('change',reset);
+$('newTestBtn').onclick=()=>{ $('studentName').value='';$('studentClass').value='';reset();window.scrollTo({top:0,behavior:'smooth'})};
+$('printResultBtn').onclick=()=>window.print();
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===btn));
+ $('test').classList.toggle('hidden',btn.dataset.tab!=='test');$('dashboard').classList.toggle('hidden',btn.dataset.tab!=='dashboard');
+ if(btn.dataset.tab==='dashboard')renderDashboard();
+}));
+function filtered(){
+ const q=$('searchStudent').value.toLowerCase(),c=$('classFilter').value;
+ return records.filter(r=>(!q||(r.name+' '+r.className).toLowerCase().includes(q))&&(!c||r.className===c));
+}
+function renderDashboard(){
+ const classes=[...new Set(records.map(r=>r.className))].sort(),old=$('classFilter').value;
+ $('classFilter').innerHTML='<option value="">All classes</option>'+classes.map(c=>'<option></option>').join('');
+ [...$('classFilter').options].forEach((o,i)=>{if(i)o.value=o.textContent=classes[i-1]});
+ $('classFilter').value=classes.includes(old)?old:'';
+ const list=filtered(),w=list.map(r=>r.wpm),a=list.map(r=>r.accuracy);
+ $('recordCount').textContent=list.length+' records';$('totalAttempts').textContent=list.length;
+ $('uniqueStudents').textContent=new Set(list.map(r=>r.name.toLowerCase())).size;
+ $('classAverage').textContent=w.length?Math.round(w.reduce((x,y)=>x+y,0)/w.length):0;
+ $('accuracyAverage').textContent=a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length)+'%':'0%';
+ const groups={};list.forEach(r=>{const k=r.name+'||'+r.className;if(!groups[k])groups[k]={name:r.name,cls:r.className,best:0,acc:0,count:0};let g=groups[k];g.best=Math.max(g.best,r.wpm);g.acc=Math.max(g.acc,r.accuracy);g.count++});
+ const leaders=Object.values(groups).sort((x,y)=>y.best-x.best||y.acc-x.acc);
+ $('leaderboardBody').innerHTML=leaders.length?leaders.map((g,i)=>`<tr><td>${i+1}</td><td>${esc(g.name)}</td><td>${esc(g.cls)}</td><td>${g.best}</td><td>${g.acc}%</td><td>${g.count}</td></tr>`).join(''):'<tr><td colspan="6" class="muted">No results yet. Complete a student test to see the leaderboard.</td></tr>';
+ $('recordsBody').innerHTML=list.length?[...list].reverse().map(r=>`<tr><td>${new Date(r.date).toLocaleString()}</td><td>${esc(r.name)}</td><td>${esc(r.className)}</td><td>${esc(r.level)}</td><td>${r.duration} min</td><td>${r.wpm}</td><td>${r.accuracy}%</td><td>${esc(r.grade)}</td></tr>`).join(''):'<tr><td colspan="8" class="muted">No records available.</td></tr>';
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('searchStudent').addEventListener('input',renderDashboard);$('classFilter').addEventListener('change',renderDashboard);
+function csvCell(v){return '"'+String(v??'').replace(/"/g,'""')+'"'}
+function downloadCSV(rows,name){
+ const cols=['date','name','className','level','duration','elapsed','wpm','accuracy','errors','grade','correct'];
+ const csv=[cols.join(','),...rows.map(r=>cols.map(k=>csvCell(r[k])).join(','))].join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+$('exportCsvBtn').onclick=()=>{if(!records.length){alert('There are no records to export yet.');return}downloadCSV(filtered(),'typing-test-results.csv')};
+$('importCsv').addEventListener('change',async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{
+ const text=await file.text(),lines=text.split(/\r?\n/).filter(Boolean),headers=parseCSV(lines.shift());
+ const incoming=lines.map(line=>{const vals=parseCSV(line),o={};headers.forEach((h,i)=>o[h]=vals[i]??'');return o}).filter(o=>o.name);
+ incoming.forEach(r=>{r.duration=Number(r.duration)||0;r.elapsed=Number(r.elapsed)||0;r.wpm=Number(r.wpm)||0;r.accuracy=Number(r.accuracy)||0;r.errors=Number(r.errors)||0;r.correct=Number(r.correct)||0;r.id=r.id||Date.now()+'-'+Math.random();r.date=r.date||new Date().toISOString();r.className=r.className||'Not specified';});
+ records=records.concat(incoming);saveRecords();renderDashboard();alert('Imported '+incoming.length+' records.');
+ }catch(err){alert('Could not read that CSV. Please use a CSV exported by this typing test.')}
+ e.target.value='';
+});
+function parseCSV(line){const out=[];let v='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'&&q&&line[i+1]==='"'){v+='"';i++}else if(c==='"')q=!q;else if(c===','&&!q){out.push(v);v=''}else v+=c}out.push(v);return out}
+$('clearRecordsBtn').onclick=()=>{if(confirm('Delete every saved result from this browser? Export a backup first if needed.')){records=[];saveRecords();renderDashboard()}};
+$('printDashboardBtn').onclick=()=>window.print();
+$('passage').textContent=target();reset();renderDashboard();
+})();
+</script>
+</body>
+</html>
